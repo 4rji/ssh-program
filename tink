@@ -1,0 +1,148 @@
+#!/usr/bin/env python3
+import os
+import re
+import subprocess
+import tkinter as tk
+from tkinter import ttk, messagebox
+from threading import Thread
+
+
+def parse_ssh_config():
+    """Parsea el archivo de configuración SSH y devuelve un diccionario de hosts."""
+    hosts = {}
+    ssh_config_path = os.path.expanduser("~/.ssh/config")
+    if not os.path.exists(ssh_config_path):
+        return hosts
+
+    with open(ssh_config_path, "r") as f:
+        for line in f:
+            line = re.sub(r"#.*", "", line).strip()
+            if not line:
+                continue
+            parts = line.split()
+            if len(parts) < 2:
+                continue
+            key = parts[0].lower()
+            if key == "host":
+                for h in parts[1:]:
+                    hosts[h] = ""
+            elif key == "hostname":
+                for h in hosts:
+                    if hosts[h] == "":
+                        hosts[h] = parts[1]
+    return hosts
+
+
+def is_online(ip, port=22):
+    """Verifica si el host está online usando nc, intentando conexión TCP al puerto SSH (22)."""
+    try:
+        result = subprocess.run(
+            ["nc", "-z", "-w1", ip, str(port)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
+
+
+class SSHManagerApp:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("SSH Host Manager")
+        self.root.geometry("500x400")
+        self.root.resizable(True, True)
+
+        # Contenedor principal
+        main_frame = ttk.Frame(root, padding="10")
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        # Título
+        title_label = ttk.Label(
+            main_frame,
+            text="Selecciona un host para conectar vía SSH",
+            font=("Helvetica", 14)
+        )
+        title_label.pack(pady=(0, 10))
+
+        # Indicador de carga
+        self.loading_var = tk.StringVar(value="Buscando hosts online...")
+        self.loading_label = ttk.Label(main_frame, textvariable=self.loading_var)
+        self.loading_label.pack(pady=5)
+
+        # Contenedor de botones
+        self.buttons_frame = ttk.Frame(main_frame)
+        self.buttons_frame.pack(fill=tk.BOTH, expand=True, pady=10)
+
+        # Botón para refrescar
+        refresh_button = ttk.Button(main_frame, text="Refrescar", command=self.load_hosts)
+        refresh_button.pack(pady=10)
+
+        # Iniciar búsqueda de hosts
+        self.online_hosts = []
+        self.load_hosts()
+
+    def load_hosts(self):
+        # Limpia botones anteriores
+        for widget in self.buttons_frame.winfo_children():
+            widget.destroy()
+
+        self.loading_var.set("Buscando hosts online...")
+        Thread(target=self.find_hosts, daemon=True).start()
+
+    def find_hosts(self):
+        hosts_dict = parse_ssh_config()
+        online_hosts = []
+
+        for host, ip in hosts_dict.items():
+            if not ip:
+                ip = host
+            if is_online(ip):
+                online_hosts.append((host, ip))
+
+        online_hosts.sort(key=lambda x: x[0])
+        self.online_hosts = online_hosts
+        self.root.after(0, self.update_buttons)
+
+    def update_buttons(self):
+        if not self.online_hosts:
+            self.loading_var.set("No hay hosts online")
+            return
+
+        self.loading_var.set(f"Hosts online encontrados: {len(self.online_hosts)}")
+
+        for host, ip in self.online_hosts:
+            host_frame = ttk.Frame(self.buttons_frame, padding="5")
+            host_frame.pack(fill=tk.X, pady=2)
+
+            info_text = f"{host} - {ip}"
+            host_label = ttk.Label(host_frame, text=info_text, width=40, anchor="w")
+            host_label.pack(side=tk.LEFT)
+
+            status_label = ttk.Label(host_frame, text="ONLINE", foreground="green")
+            status_label.pack(side=tk.LEFT, padx=10)
+
+            connect_button = ttk.Button(
+                host_frame,
+                text="Conectar",
+                command=lambda h=host: self.connect_to_ssh(h)
+            )
+            connect_button.pack(side=tk.RIGHT)
+
+    def connect_to_ssh(self, host):
+        self.root.destroy()
+        try:
+            os.execvp("ssh", ["ssh", host])
+        except Exception as e:
+            print(f"Error al conectar: {e}")
+            messagebox.showerror("Error de conexión", f"No se pudo conectar a {host}: {e}")
+
+
+def main():
+    root = tk.Tk()
+    app = SSHManagerApp(root)
+    root.mainloop()
+
+
+if __name__ == "__main__":
+    main()
