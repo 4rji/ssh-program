@@ -1,0 +1,24 @@
+import customtkinter as ctk
+
+# Configuración general
+ctk.set_appearance_mode("dark")
+ctk.set_default_color_theme("blue")
+
+# Ventana principal
+app = ctk.CTk()
+app.geometry("400x300")
+app.title("Botón con pantalla de muestra")
+
+# Pantalla de muestra
+display = ctk.CTkLabel(app, text="Presiona el botón", font=("Arial", 18))
+display.pack(pady=40)
+
+# Función del botón
+def on_click():
+    display.configure(text="¡Botón presionado!")
+
+# Botón
+button = ctk.CTkButton(app, text="Presionar", command=on_click)
+button.pack(pady=20)
+
+app.mainloop()
