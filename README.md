@@ -1,4 +1,4 @@
-# ssh_fzf
+# SSH Navigator
 
 Fast SSH host selector. Reads `~/.ssh/config`, probes each host (online/offline), feeds to `fzf` for interactive selection, then executes `ssh <alias>` with your pick. Includes real-time network diagnostics — dig, gping, mtr, trip (with GeoIP map), tracepath, traceroute — all from the preview panel.
 
@@ -37,7 +37,7 @@ When a tool is active, the host card disappears and the preview shows only that 
 ## Install from GitHub (no clone needed)
 
 ```bash
-go install github.com/4rji/binarios-go/ssh_fzf@latest
+go install github.com/4rji/ssh-navigator@latest
 ```
 
 This compiles and places the binary in `$(go env GOPATH)/bin` (or `GOBIN` if set).
@@ -45,15 +45,15 @@ This compiles and places the binary in `$(go env GOPATH)/bin` (or `GOBIN` if set
 ## Build locally
 
 ```bash
-git clone https://github.com/4rji/binarios-go.git
-cd binarios-go/ssh_fzf
-go build -o ssh_fzf .
+git clone https://github.com/4rji/ssh-navigator.git
+cd ssh-navigator
+go build -o ssh-navigator .
 ```
 
 ## Usage
 
 ```bash
-ssh_fzf
+ssh-navigator
 ```
 
 - Use `ctrl-s` to toggle sorting inside `fzf`.
@@ -64,7 +64,7 @@ ssh_fzf
 
 ## Environment variables
 
-- `SSH_FZF_TIMEOUT_MS`: timeout in milliseconds for the TCP check (default 400).
+- `SSH_NAVIGATOR_TIMEOUT_MS`: timeout in milliseconds for the TCP check (default 400).
 
 ## Notes
 

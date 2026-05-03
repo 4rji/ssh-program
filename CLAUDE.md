@@ -4,20 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Single-file Go CLI (`ssh_fzf.go`) that reads `~/.ssh/config`, classifies each host as online/offline via a short TCP dial, and feeds the list to `fzf` for interactive selection. The picked alias is then handed to `ssh`.
+Single-file Go CLI (`ssh_navigator.go`) that reads `~/.ssh/config`, classifies each host as online/offline via a short TCP dial, and feeds the list to `fzf` for interactive selection. The picked alias is then handed to `ssh`.
 
-## Missing go.mod (important)
+## Module and local workflow
 
-Unlike every other tool in the `binarios-go/` monorepo, this directory has **no `go.mod`**. Consequences:
-
-- `go build .` / `go run .` inside `ssh_fzf/` will fail from a fresh checkout — Go has no module context.
-- The README advertises `go install github.com/4rji/binarios-go/ssh_fzf@latest`, which requires a module. Before publishing, someone needs to `go mod init github.com/4rji/binarios-go/ssh_fzf` (matching the path in the README) and commit the resulting `go.mod`/`go.sum`.
-- If you're asked to "just build it," initialize the module first rather than adding a root workspace — the parent repo deliberately avoids a `go.work` (see `../CLAUDE.md`).
-
-Once the module exists, the normal workflow is:
+This repository is module-enabled as `github.com/4rji/ssh-navigator`. The normal local workflow is:
 
 ```sh
-go build -o ssh_fzf .
+go build -o ssh-navigator .
 go run .
 ```
 
@@ -28,7 +22,7 @@ There are no tests and no lint config in this directory.
 The binary is re-invoked by `fzf` as its own preview provider. `main()` dispatches on `os.Args[1]`:
 
 - Default mode — parse `~/.ssh/config`, probe each host in parallel, render a tab-delimited list, spawn `fzf`, then `exec ssh <alias>` with the selection.
-- `preview` mode — `ssh_fzf preview <alias>` prints the detail panel for a single host. `fzf` is started with `--preview "<self> preview '{1}'"` where `{1}` is the first (hidden) field of the current line.
+- `preview` mode — `ssh-navigator preview <alias>` prints the detail panel for a single host. `fzf` is started with `--preview "<self> preview '{1}'"` where `{1}` is the first (hidden) field of the current line.
 
 The preview command uses `os.Executable()` to find the current binary and `shellQuote` to escape it, so the tool works regardless of install path.
 
@@ -40,7 +34,7 @@ Ordering is controlled manually: online hosts are emitted first, then offline. `
 
 ### Status probe
 
-`classifyStatus` runs `net.Dialer.Dial("tcp", ...)` in parallel with a worker pool capped at `max(4, NumCPU*4)`. Timeout defaults to 400 ms, overridable via `SSH_FZF_TIMEOUT_MS`. A successful TCP dial counts as online — there is no SSH handshake.
+`classifyStatus` runs `net.Dialer.Dial("tcp", ...)` in parallel with a worker pool capped at `max(4, NumCPU*4)`. Timeout defaults to 400 ms, overridable via `SSH_NAVIGATOR_TIMEOUT_MS`. A successful TCP dial counts as online — there is no SSH handshake.
 
 ### SSH config parsing
 

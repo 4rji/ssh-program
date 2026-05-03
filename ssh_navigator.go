@@ -1,4 +1,4 @@
-// ssh_fzf.go
+// ssh_navigator.go
 package main
 
 import (
@@ -417,7 +417,7 @@ func hostAndPort(h SSHHost) (string, string) {
 func statusTimeout() time.Duration {
 	const defaultTimeout = 400 * time.Millisecond
 	const maxTimeout = 5 * time.Second
-	if v := os.Getenv("SSH_FZF_TIMEOUT_MS"); v != "" {
+	if v := os.Getenv("SSH_NAVIGATOR_TIMEOUT_MS"); v != "" {
 		if ms, err := strconv.Atoi(v); err == nil && ms > 0 {
 			d := time.Duration(ms) * time.Millisecond
 			if d > maxTimeout {
